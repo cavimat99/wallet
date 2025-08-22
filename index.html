@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>BIP39 Word Picker</title>
+<title>BIP39 Word Picker + Keys</title>
 <meta name="theme-color" content="#0a0f16" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <style>
 :root{
   --bg:#0a0f16; --panel:#0f1622; --text:#e8eef6; --muted:#9db0c8;
-  --accent:#3b82f6; --line:#1b2433; --ok:#10b981; --warn:#f59e0b;
+  --accent:#3b82f6; --line:#1b2433; --ok:#10b981; --warn:#f59e0b; --danger:#ef4444;
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
 html,body{height:100%; overflow:hidden}
@@ -25,7 +25,7 @@ a{color:#cfe1ff}
   background:var(--panel); border-bottom:1px solid var(--line);
   overflow:auto; -webkit-overflow-scrolling:touch;
 }
-.inner{max-width:760px; margin:0 auto}
+.inner{max-width:780px; margin:0 auto}
 
 .brand{padding-top:calc(env(safe-area-inset-top,0px)+8px); margin-bottom:10px}
 .homeLink{
@@ -38,13 +38,13 @@ a{color:#cfe1ff}
   background:linear-gradient(90deg,#22d3ee 0%, #3b82f6 55%, #a855f7 100%);
   -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent
 }
-.sub{font-size:12.5px; color:var(--muted); margin-top:6px}
+.sub{font-size:12.5px; color:#9db0c8; margin-top:6px}
 
 .heading{font-size:18px; color:#cfe1ff; font-weight:800; margin-top:10px}
 .label{font-size:13px; color:#c4d2e6; margin-bottom:6px}
 .row{display:grid; gap:10px; margin-top:8px}
 .rowGrid{display:grid; grid-template-columns:1fr 1fr; gap:12px}
-@media (max-width:520px){ .rowGrid{grid-template-columns:1fr} }
+@media (max-width:560px){ .rowGrid{grid-template-columns:1fr} }
 
 .chips{display:flex; flex-wrap:wrap; gap:8px}
 .chip{
@@ -53,19 +53,17 @@ a{color:#cfe1ff}
 }
 .chip.selected{background:var(--accent); color:#fff; border-color:transparent; box-shadow:0 6px 18px rgba(59,130,246,.25)}
 
-.input{
-  display:flex; gap:8px; align-items:center; flex-wrap:wrap
-}
+.input{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
 .input input{
-  width:120px; padding:10px 12px; border-radius:12px; border:1px solid #273449; background:#0e1420; color:#e8eef6; font-size:16px
+  width:140px; padding:10px 12px; border-radius:12px; border:1px solid #273449; background:#0e1420; color:#e8eef6; font-size:16px
 }
 .help{font-size:12px; color:#93a6c2}
-
 .note{
   margin-top:8px; font-size:12px; color:#9db0c8; border:1px dashed #2a374b; border-radius:12px; padding:10px; background:#0e1420
 }
+.err{color:#ffb4b4; font-size:12px; margin-top:6px}
 
-/* ACTION BAR */
+/* ACTION BAR: sempre visibile */
 .bar{
   position:fixed; left:0; right:0; bottom:0; z-index:10;
   padding:8px 12px calc(8px + env(safe-area-inset-bottom));
@@ -82,7 +80,6 @@ a{color:#cfe1ff}
 .top{padding:calc(10px + env(safe-area-inset-top)) 14px 6px; display:flex; justify-content:space-between; align-items:center}
 .title{margin:0; font-weight:1000; font-size:clamp(18px,5.5vw,24px)}
 .body{padding:8px 14px 14px; overflow:auto; -webkit-overflow-scrolling:touch}
-
 .grid{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:10px}
 @media (max-width:680px){ .grid{grid-template-columns:repeat(2, 1fr)} }
 @media (max-width:420px){ .grid{grid-template-columns:1fr} }
@@ -92,9 +89,19 @@ a{color:#cfe1ff}
 }
 .word small{display:block; font-weight:700; font-size:12px; color:#9db0c8; margin-bottom:6px}
 
-.bottom{padding:8px 14px calc(10px + env(safe-area-inset-bottom)); display:flex; gap:10px}
-.err{color:#ffb4b4; font-size:12px; margin-top:6px}
+.kcard{
+  margin-top:12px; padding:14px; border-radius:14px; border:1px solid #273449; background:#0e1420;
+}
+.krow{display:grid; gap:8px; margin-top:8px}
+.klabel{font-size:12px; color:#9db0c8}
+.kval{
+  display:flex; gap:8px; align-items:center; background:#0b1220; border:1px solid #223047; border-radius:12px; padding:10px;
+  font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Roboto Mono", monospace; font-size:13px; color:#eaf1ff; word-break:break-all;
+}
+.kval .hide{filter: blur(5px)}
+.kval .btn-mini{margin-left:auto; font-size:12px; padding:6px 8px; border-radius:8px; border:1px solid #2a374b; background:#162235; color:#d8e6fb; cursor:pointer}
 .badge{font-size:12px; color:#b0c4de; background:rgba(10,16,24,.55); padding:6px 8px; border-radius:10px; border:1px solid rgba(255,255,255,.06)}
+.warnBox{margin-top:10px; font-size:12px; color:#ffd7a1}
 </style>
 </head>
 <body>
@@ -106,7 +113,7 @@ a{color:#cfe1ff}
       <div class="brand">
         <a class="homeLink" href="https://cavimat99.github.io/Home-MC/" rel="noopener">← Torna a HOME</a>
         <h1 class="h1">BIP39 <span class="accent">Word Picker</span></h1>
-        <div class="sub">Estrai parole casuali dall’elenco ufficiale (inglese) di 2048 parole.</div>
+        <div class="sub">Estrai parole casuali dall’elenco ufficiale (inglese) e, se vuoi, calcola seed + xpub/xprv.</div>
       </div>
 
       <div class="heading">Quante parole vuoi?</div>
@@ -140,15 +147,20 @@ a{color:#cfe1ff}
         </div>
       </div>
 
-      <div class="note">
-        ⚠️ <b>Avviso</b>: anche usando il generatore crittografico del browser, non usare questa pagina per generare frasi seed reali. Per portafogli crypto usa un <b>hardware wallet</b> e la procedura ufficiale.
+      <div class="heading">Seed & Chiavi (facoltativo)</div>
+      <div class="row">
+        <div class="input" style="flex-direction:column; align-items:flex-start">
+          <label class="label" for="passphrase">Passphrase BIP39 (opzionale)</label>
+          <input id="passphrase" type="text" inputmode="text" autocomplete="off" placeholder="consigliato lasciare vuoto" />
+          <div class="note">⚠️ Non usare questa app per wallet reali. Per fondi veri usa un <b>hardware wallet</b> e le procedure ufficiali. La mnemonica, la seed e l’xprv sono <b>segreti</b>.</div>
+        </div>
       </div>
 
       <div id="err" class="err" style="display:none;"></div>
     </div>
   </section>
 
-  <!-- ACTIONS -->
+  <!-- ACTION BAR (sempre visibile) -->
   <div class="bar">
     <button class="btn" id="genBtn">GENERA</button>
   </div>
@@ -160,167 +172,285 @@ a{color:#cfe1ff}
         <h2 class="title">Risultato</h2>
         <div class="badge" id="sourceBadge">Wordlist: caricamento…</div>
       </div>
+
       <div class="body">
         <div id="grid" class="grid"></div>
+
+        <!-- SEZIONE CHIAVI -->
+        <div class="kcard" id="keysCard" style="display:none;">
+          <div class="heading" style="margin:0;">Seed & Chiavi</div>
+          <div class="warnBox">Non esiste una “seed pubblica”. Condivisibile è l’<b>xpub</b>. Tieni segrete mnemonica, seed e <b>xprv</b>.</div>
+
+          <div class="krow">
+            <div class="klabel">Mnemonica</div>
+            <div class="kval">
+              <span id="mnemoVal" class="hide"></span>
+              <button class="btn-mini" id="mnemoToggle">👁 Mostra</button>
+              <button class="btn-mini" id="mnemoCopy">Copia</button>
+            </div>
+          </div>
+
+          <div class="krow">
+            <div class="klabel">Seed (hex)</div>
+            <div class="kval">
+              <span id="seedVal" class="hide"></span>
+              <button class="btn-mini" id="seedToggle">👁 Mostra</button>
+              <button class="btn-mini" id="seedCopy">Copia</button>
+            </div>
+          </div>
+
+          <div class="krow">
+            <div class="klabel">Master xprv (BIP32)</div>
+            <div class="kval">
+              <span id="xprvVal" class="hide"></span>
+              <button class="btn-mini" id="xprvToggle">👁 Mostra</button>
+              <button class="btn-mini" id="xprvCopy">Copia</button>
+            </div>
+          </div>
+
+          <div class="krow">
+            <div class="klabel">Master xpub (BIP32)</div>
+            <div class="kval">
+              <span id="xpubVal"></span>
+              <button class="btn-mini" id="xpubCopy">Copia</button>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="bottom">
-        <button class="btn ghost" id="copyBtn">Copia</button>
-        <button class="btn" id="againBtn">Nuova estrazione</button>
+
+      <div class="bottom" style="padding:8px 14px calc(90px + env(safe-area-inset-bottom)); display:flex; gap:10px">
+        <button class="btn ghost" id="copyBtn">Copia parole</button>
+        <button class="btn" id="keysBtn">Calcola seed & chiavi</button>
       </div>
     </div>
   </section>
 
 </div>
 
-<script>
-(()=> {
-  const $ = id => document.getElementById(id);
-  const qsa = (s, r=document) => Array.from(r.querySelectorAll(s));
+<!-- App logic -->
+<script type="module">
+/* ===== Imports ESM (CDN) ===== */
+import { pbkdf2 }   from 'https://cdn.jsdelivr.net/npm/@noble/hashes@1.8.0/pbkdf2.js';
+import { hmac }     from 'https://cdn.jsdelivr.net/npm/@noble/hashes@1.8.0/hmac.js';
+import { sha512 }   from 'https://cdn.jsdelivr.net/npm/@noble/hashes@1.8.0/sha512.js';
+import { sha256 }   from 'https://cdn.jsdelivr.net/npm/@noble/hashes@1.8.0/sha256.js';
+import { ripemd160 }from 'https://cdn.jsdelivr.net/npm/@noble/hashes@1.8.0/ripemd160.js';
+import * as secp    from 'https://cdn.jsdelivr.net/npm/@noble/secp256k1@2.3.0/+esm';
+import bs58check    from 'https://cdn.jsdelivr.net/npm/bs58check@4.0.0/+esm';
 
-  let WORDS = [];
-  let lastPick = [];
+/* ===== Shortcuts ===== */
+const $ = id => document.getElementById(id);
+const qsa = (s, r=document) => Array.from(r.querySelectorAll(s));
 
-  /* ======== RNG: usa crypto.getRandomValues se disponibile ======== */
-  function randInt(range){
-    if (range <= 1) return 0;
-    const g = window.crypto && window.crypto.getRandomValues ? window.crypto : null;
-    if (!g) return Math.floor(Math.random()*range);
-    const max = 0x100000000; // 2^32
-    const limit = Math.floor(max / range) * range;
-    const buf = new Uint32Array(1);
-    let v;
-    do { g.getRandomValues(buf); v = buf[0]; } while (v >= limit);
-    return v % range;
+let WORDS = [];
+let lastPick = [];
+
+/* ===== Utils ===== */
+const enc = new TextEncoder();
+const toBytes = s => enc.encode(s);
+const toHex = u8 => Array.from(u8).map(b=>b.toString(16).padStart(2,'0')).join('');
+const fromHex = hex => new Uint8Array(hex.match(/../g).map(b=>parseInt(b,16)));
+
+function setErr(msg){ const e=$('err'); if(msg){ e.style.display='block'; e.textContent=msg; } else { e.style.display='none'; } }
+function showResults(on){ $('results').classList.toggle('on', !!on); $('settings').style.display = on ? 'none' : 'block'; }
+function renderWords(list){
+  const grid = $('grid'); grid.innerHTML = '';
+  list.forEach((w,i)=>{
+    const card = document.createElement('div');
+    card.className = 'word';
+    card.innerHTML = `<small>${i+1}</small>${w}`;
+    grid.appendChild(card);
+  });
+}
+
+/* ===== RNG sicuro ===== */
+function randInt(range){
+  if (range <= 1) return 0;
+  const g = window.crypto?.getRandomValues ? window.crypto : null;
+  if (!g) return Math.floor(Math.random()*range);
+  const max = 0x100000000, limit = Math.floor(max / range) * range;
+  const buf = new Uint32Array(1); let v;
+  do { g.getRandomValues(buf); v = buf[0]; } while (v >= limit);
+  return v % range;
+}
+function sampleUnique(arr, k){
+  k = Math.min(k, arr.length);
+  const n=arr.length, idx = Array.from({length:n}, (_,i)=>i);
+  for(let i=0;i<k;i++){ const j=i+randInt(n-i); [idx[i],idx[j]]= [idx[j],idx[i]]; }
+  const out = new Array(k); for(let i=0;i<k;i++) out[i]=arr[idx[i]]; return out;
+}
+function shuffleInPlace(arr){ for(let i=arr.length-1;i>0;i--){ const j=randInt(i+1); [arr[i],arr[j]]=[arr[j],arr[i]] } return arr; }
+
+/* ===== Wordlist (sorgenti ufficiali) ===== */
+async function fetchWordlist(){
+  const sources = [
+    { url:'https://raw.githubusercontent.com/bitcoin/bips/master/bip-0039/english.txt', label:'bitcoin/bips · english.txt' },
+    { url:'https://raw.githubusercontent.com/trezor/python-mnemonic/master/src/mnemonic/wordlist/english.txt', label:'trezor/python-mnemonic' }
+  ];
+  for (const s of sources){
+    try{
+      const res = await fetch(s.url, {cache:'no-store'});
+      if(!res.ok) continue;
+      const text = (await res.text()).trim();
+      const words = text.split(/\s+/);
+      if(words.length >= 2048){ WORDS = words; $('sourceBadge').textContent='Wordlist: '+s.label; return true; }
+    }catch(e){}
   }
+  WORDS = ["abandon","ability","able","about","above","absent","absorb","abstract","absurd","abuse"];
+  $('sourceBadge').textContent = 'Wordlist: fallback minimo (controlla rete)';
+  return false;
+}
 
-  // Estrazione senza ripetizioni (Fisher–Yates parziale)
-  function sampleUnique(arr, k){
-    k = Math.min(k, arr.length);
-    const n = arr.length;
-    const idx = Array.from({length:n}, (_,i)=>i);
-    for(let i=0;i<k;i++){
-      const j = i + randInt(n - i);
-      const tmp = idx[i]; idx[i] = idx[j]; idx[j] = tmp;
-    }
-    const out = new Array(k);
-    for(let i=0;i<k;i++) out[i] = arr[idx[i]];
-    return out;
+/* ===== UI: chips ===== */
+function bindChips(){
+  qsa('#chipsCount .chip').forEach(ch=>{
+    ch.addEventListener('click', ()=>{
+      qsa('#chipsCount .chip').forEach(b=>b.classList.remove('selected'));
+      ch.classList.add('selected');
+      $('countInput').value = ch.dataset.n;
+    }, {passive:true});
+  });
+  $('noDup').addEventListener('click', ()=>$('noDup').classList.toggle('selected'), {passive:true});
+  $('shuffle').addEventListener('click', ()=>$('shuffle').classList.toggle('selected'), {passive:true});
+}
+function getCount(){
+  const chipSel=qsa('#chipsCount .chip.selected')[0];
+  const chipVal = chipSel ? parseInt(chipSel.dataset.n,10) : null;
+  const inputVal = parseInt($('countInput').value,10);
+  const n = (!isNaN(inputVal) ? inputVal : chipVal) || chipVal || 24;
+  return Math.max(1, Math.min(2048, n));
+}
+
+/* ===== Genera parole ===== */
+async function generate(){
+  setErr('');
+  if(WORDS.length===0){ await fetchWordlist(); }
+  const n = getCount();
+  const noDup = $('noDup').classList.contains('selected');
+  if(noDup && n > WORDS.length){ setErr('Richieste più parole di quante ne esistano nella lista.'); return; }
+  let pick = noDup ? sampleUnique(WORDS, n) : Array.from({length:n}, ()=>WORDS[randInt(WORDS.length)]);
+  if($('shuffle').classList.contains('selected')) shuffleInPlace(pick);
+  lastPick = pick.slice();
+  renderWords(pick);
+  showResults(true);
+  // nascondi (di default) i segreti se rigeneri
+  hideSecrets();
+  $('keysCard').style.display='none';
+}
+
+/* ===== Clipboard ===== */
+function copyText(t){
+  if (!t) return;
+  if (navigator.clipboard?.writeText) { navigator.clipboard.writeText(t).catch(()=>{}); }
+  else {
+    const ta=document.createElement('textarea');
+    ta.value=t; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); }catch(e){} document.body.removeChild(ta);
   }
+}
 
-  function shuffleInPlace(arr){
-    for(let i=arr.length-1;i>0;i--){
-      const j = randInt(i+1);
-      const t = arr[i]; arr[i]=arr[j]; arr[j]=t;
-    }
-    return arr;
-  }
+/* ====== BIP39 → seed (PBKDF2-HMAC-SHA512) ====== */
+function mnemonicToSeed(mnemonic, passphrase=''){
+  const m = (mnemonic || '').normalize('NFKD');
+  const salt = ('mnemonic'+(passphrase||'')).normalize('NFKD');
+  const dk = pbkdf2(sha512, toBytes(m), toBytes(salt), { c:2048, dkLen:64 });
+  return dk; // Uint8Array(64)
+}
 
-  /* ======== Fetch wordlist (sorgenti ufficiali) ======== */
-  async function fetchWordlist(){
-    const sources = [
-      {
-        url: 'https://raw.githubusercontent.com/bitcoin/bips/master/bip-0039/english.txt',
-        label: 'bitcoin/bips · english.txt'
-      },
-      {
-        url: 'https://raw.githubusercontent.com/trezor/python-mnemonic/master/src/mnemonic/wordlist/english.txt',
-        label: 'trezor/python-mnemonic'
-      }
-    ];
-    for (const s of sources){
-      try{
-        const res = await fetch(s.url, {cache:'no-store'});
-        if(!res.ok) continue;
-        const text = (await res.text()).trim();
-        const words = text.split(/\s+/);
-        if(words.length >= 2048){
-          WORDS = words;
-          $('sourceBadge').textContent = 'Wordlist: ' + s.label;
-          return true;
-        }
-      }catch(e){}
-    }
-    // Fallback: piccolo set (per non bloccare la UI)
-    WORDS = ["abandon","ability","able","about","above","absent","absorb","abstract","absurd","abuse"];
-    $('sourceBadge').textContent = 'Wordlist: fallback minimo (controlla rete)';
-    return false;
-  }
+/* ====== BIP32 master (xprv/xpub) ====== */
+function hmac512(keyBytes, dataBytes){ return hmac(sha512, keyBytes, dataBytes); }
+function ser32(i){ const b=new Uint8Array(4); new DataView(b.buffer).setUint32(0, i>>>0); return b; }
+function serialize(version, depth, parentFP, childNum, chainCode, keyData){
+  const out = new Uint8Array(78);
+  new DataView(out.buffer).setUint32(0, version>>>0);
+  out[4] = depth & 0xff;
+  new DataView(out.buffer).setUint32(5, parentFP>>>0);
+  new DataView(out.buffer).setUint32(9, childNum>>>0);
+  out.set(chainCode, 13);
+  out.set(keyData, 45);
+  return bs58check.encode(out);
+}
+function hash160(u8){ return ripemd160(sha256(u8)); }
 
-  /* ======== UI helpers ======== */
-  function showResults(on){
-    $('results').classList.toggle('on', !!on);
-    $('settings').style.display = on ? 'none' : 'block';
-  }
+function computeMasterKeys(seedU8){
+  // I = HMAC-SHA512(key="Bitcoin seed", data=seed)
+  const I = hmac512(toBytes('Bitcoin seed'), seedU8);
+  const IL = I.slice(0,32), IR = I.slice(32);
+  // check range 1..n-1
+  const n = secp.CURVE.n;
+  const ilBig = BigInt('0x'+toHex(IL));
+  if (ilBig === 0n || ilBig >= n) throw new Error('Derivazione master fuori range (IL non valido). Rigenera.');
+  const priv = IL;                    // 32 bytes
+  const chain = IR;                   // 32 bytes
+  const pub  = secp.getPublicKey(priv, true); // 33 bytes (compressed)
 
-  function renderWords(list){
-    const grid = $('grid'); grid.innerHTML = '';
-    list.forEach((w,i)=>{
-      const card = document.createElement('div');
-      card.className = 'word';
-      card.innerHTML = `<small>${i+1}</small>${w}`;
-      grid.appendChild(card);
-    });
-  }
+  // master: depth=0, parentFP=0x00000000, child=0x00000000
+  const VERSION_XPRV = 0x0488ADE4; // mainnet
+  const VERSION_XPUB = 0x0488B21E;
 
-  function setErr(msg){ const e=$('err'); if(msg){ e.style.display='block'; e.textContent=msg; } else { e.style.display='none'; } }
+  const keyDataPrv = new Uint8Array(33); keyDataPrv[0]=0x00; keyDataPrv.set(priv,1);
+  const xprv = serialize(VERSION_XPRV, 0, 0, 0, chain, keyDataPrv);
+  const xpub = serialize(VERSION_XPUB, 0, 0, 0, chain, pub);
+  return { xprv, xpub };
+}
 
-  function getCount(){
-    const chipSel = qsa('#chipsCount .chip.selected')[0];
-    const chipVal = chipSel ? parseInt(chipSel.dataset.n,10) : null;
-    const inputVal = parseInt($('countInput').value, 10);
-    const n = (!isNaN(inputVal) ? inputVal : chipVal) || chipVal || 24;
-    return Math.max(1, Math.min(2048, n));
-  }
+/* ====== Segreti: mostra/nascondi ====== */
+function toggleBlur(el, btn){
+  el.classList.toggle('hide');
+  btn.textContent = el.classList.contains('hide') ? '👁 Mostra' : '🙈 Nascondi';
+}
+function hideSecrets(){
+  ['mnemoVal','seedVal','xprvVal'].forEach(id => {
+    const el=$(id); if(el && !el.classList.contains('hide')) el.classList.add('hide');
+  });
+  if ($('mnemoToggle')) $('mnemoToggle').textContent='👁 Mostra';
+  if ($('seedToggle'))  $('seedToggle').textContent='👁 Mostra';
+  if ($('xprvToggle'))  $('xprvToggle').textContent='👁 Mostra';
+}
 
-  /* ======== Events ======== */
-  function bindChips(){
-    qsa('#chipsCount .chip').forEach(ch=>{
-      ch.addEventListener('click', ()=>{
-        qsa('#chipsCount .chip').forEach(b=>b.classList.remove('selected'));
-        ch.classList.add('selected');
-        $('countInput').value = ch.dataset.n;
-      }, {passive:true});
-    });
-    $('noDup').addEventListener('click', ()=>$('noDup').classList.toggle('selected'), {passive:true});
-    $('shuffle').addEventListener('click', ()=>$('shuffle').classList.toggle('selected'), {passive:true});
-  }
+/* ====== Event handlers ====== */
+function bindEvents(){
+  // chips & options
+  bindChips();
 
-  async function generate(){
-    setErr('');
-    if(WORDS.length===0){ await fetchWordlist(); }
-    const n = getCount();
-    const noDup = $('noDup').classList.contains('selected');
-    if(noDup && n > WORDS.length){
-      setErr('Richieste più parole di quante ne esistano nella lista.');
-      return;
-    }
-    let pick = noDup ? sampleUnique(WORDS, n)
-                     : Array.from({length:n},()=>WORDS[randInt(WORDS.length)]);
-    if($('shuffle').classList.contains('selected')) shuffleInPlace(pick);
-    lastPick = pick.slice();
-    renderWords(pick);
-    showResults(true);
-  }
+  // azioni principali
+  $('genBtn').addEventListener('click', generate, {passive:true});  // SEMPRE visibile
+  $('copyBtn').addEventListener('click', ()=> copyText(lastPick.join(' ')), {passive:true});
 
-  function copyOut(){
+  // calcolo chiavi
+  $('keysBtn').addEventListener('click', ()=>{
     if(!lastPick.length) return;
-    const text = lastPick.join(' ');
-    navigator.clipboard && navigator.clipboard.writeText(text).catch(()=>{});
-  }
+    const mnemonic = lastPick.join(' ');
+    const pass = $('passphrase').value || '';
+    try{
+      const seedU8 = mnemonicToSeed(mnemonic, pass);
+      const { xprv, xpub } = computeMasterKeys(seedU8);
+      $('keysCard').style.display='block';
+      $('mnemoVal').textContent = mnemonic;
+      $('seedVal').textContent  = toHex(seedU8);
+      $('xprvVal').textContent  = xprv;
+      $('xpubVal').textContent  = xpub;
+      hideSecrets(); // parte nascosto
+    }catch(e){
+      alert(e.message || 'Errore nel calcolo delle chiavi');
+    }
+  }, {passive:true});
 
-  function again(){ showResults(false); }
+  // toggles/copy singoli
+  $('mnemoToggle').addEventListener('click', ()=>toggleBlur($('mnemoVal'), $('mnemoToggle')));
+  $('seedToggle').addEventListener('click',  ()=>toggleBlur($('seedVal'),  $('seedToggle')));
+  $('xprvToggle').addEventListener('click',  ()=>toggleBlur($('xprvVal'),  $('xprvToggle')));
+  $('mnemoCopy').addEventListener('click', ()=>copyText($('mnemoVal').textContent));
+  $('seedCopy').addEventListener('click',  ()=>copyText($('seedVal').textContent));
+  $('xprvCopy').addEventListener('click',  ()=>copyText($('xprvVal').textContent));
+  $('xpubCopy').addEventListener('click',  ()=>copyText($('xpubVal').textContent));
+}
 
-  /* ======== Init ======== */
-  function init(){
-    bindChips();
-    // prefetch (non blocca UI)
-    fetchWordlist().catch(()=>{});
-    $('genBtn').addEventListener('click', generate, {passive:true});
-    $('againBtn').addEventListener('click', again, {passive:true});
-    $('copyBtn').addEventListener('click', copyOut, {passive:true});
-  }
-  window.addEventListener('load', init);
-})();
+/* ====== Init ====== */
+function init(){
+  bindEvents();
+  fetchWordlist().catch(()=>{});
+}
+window.addEventListener('load', init);
 </script>
 </body>
 </html>
