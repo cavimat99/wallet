@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>BIP39 Word Picker</title>
+<meta name="theme-color" content="#0a0f16" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<style>
+:root{
+  --bg:#0a0f16; --panel:#0f1622; --text:#e8eef6; --muted:#9db0c8;
+  --accent:#3b82f6; --line:#1b2433; --ok:#10b981; --warn:#f59e0b;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html,body{height:100%; overflow:hidden}
+body{margin:0; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,"SF Pro",Inter,Roboto,Arial,sans-serif}
+a{color:#cfe1ff}
+
+.app{height:100dvh; display:grid; grid-template-rows:1fr auto}
+
+/* SETTINGS (scroll) */
+.settings{
+  padding:8px 14px 110px;
+  background:var(--panel); border-bottom:1px solid var(--line);
+  overflow:auto; -webkit-overflow-scrolling:touch;
+}
+.inner{max-width:760px; margin:0 auto}
+
+.brand{padding-top:calc(env(safe-area-inset-top,0px)+8px); margin-bottom:10px}
+.homeLink{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:8px 10px; border-radius:10px; border:1px solid #2a374b;
+  color:#d8e6fb; text-decoration:none; font-weight:800; font-size:13px; background:#0e1420;
+}
+.h1{margin:8px 0 0; font-weight:1000; font-size:clamp(26px,7.5vw,38px); letter-spacing:.02em}
+.h1 .accent{
+  background:linear-gradient(90deg,#22d3ee 0%, #3b82f6 55%, #a855f7 100%);
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent
+}
+.sub{font-size:12.5px; color:var(--muted); margin-top:6px}
+
+.heading{font-size:18px; color:#cfe1ff; font-weight:800; margin-top:10px}
+.label{font-size:13px; color:#c4d2e6; margin-bottom:6px}
+.row{display:grid; gap:10px; margin-top:8px}
+.rowGrid{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+@media (max-width:520px){ .rowGrid{grid-template-columns:1fr} }
+
+.chips{display:flex; flex-wrap:wrap; gap:8px}
+.chip{
+  padding:10px 12px; border-radius:12px; border:1px solid #273449; background:#0e1420; color:#d8e6fb;
+  font-size:15px; font-weight:800; cursor:pointer; user-select:none;
+}
+.chip.selected{background:var(--accent); color:#fff; border-color:transparent; box-shadow:0 6px 18px rgba(59,130,246,.25)}
+
+.input{
+  display:flex; gap:8px; align-items:center; flex-wrap:wrap
+}
+.input input{
+  width:120px; padding:10px 12px; border-radius:12px; border:1px solid #273449; background:#0e1420; color:#e8eef6; font-size:16px
+}
+.help{font-size:12px; color:#93a6c2}
+
+.note{
+  margin-top:8px; font-size:12px; color:#9db0c8; border:1px dashed #2a374b; border-radius:12px; padding:10px; background:#0e1420
+}
+
+/* ACTION BAR */
+.bar{
+  position:fixed; left:0; right:0; bottom:0; z-index:10;
+  padding:8px 12px calc(8px + env(safe-area-inset-bottom));
+  display:flex; gap:10px; justify-content:center; align-items:center;
+  background:linear-gradient(180deg,rgba(10,16,24,0),rgba(10,16,24,.65))
+}
+.btn{flex:1; max-width:520px; height:56px; border:none; border-radius:16px; font-size:18px; font-weight:900; color:#fff; background:var(--accent); box-shadow:0 8px 18px rgba(59,130,246,.18); cursor:pointer}
+.btn.ghost{background:#0e1420; border:1px solid #2a374b; color:#e8eef6}
+
+/* RESULTS (scroll) */
+.results{display:none; position:relative; background:#000}
+.results.on{display:block}
+.wrap{position:absolute; inset:0; display:grid; grid-template-rows:auto 1fr auto}
+.top{padding:calc(10px + env(safe-area-inset-top)) 14px 6px; display:flex; justify-content:space-between; align-items:center}
+.title{margin:0; font-weight:1000; font-size:clamp(18px,5.5vw,24px)}
+.body{padding:8px 14px 14px; overflow:auto; -webkit-overflow-scrolling:touch}
+
+.grid{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:10px}
+@media (max-width:680px){ .grid{grid-template-columns:repeat(2, 1fr)} }
+@media (max-width:420px){ .grid{grid-template-columns:1fr} }
+.word{
+  background:#0e1420; border:1px solid #273449; border-radius:14px; padding:16px;
+  font-size:22px; font-weight:900; text-align:center; color:#fff;
+}
+.word small{display:block; font-weight:700; font-size:12px; color:#9db0c8; margin-bottom:6px}
+
+.bottom{padding:8px 14px calc(10px + env(safe-area-inset-bottom)); display:flex; gap:10px}
+.err{color:#ffb4b4; font-size:12px; margin-top:6px}
+.badge{font-size:12px; color:#b0c4de; background:rgba(10,16,24,.55); padding:6px 8px; border-radius:10px; border:1px solid rgba(255,255,255,.06)}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- SETTINGS -->
+  <section id="settings" class="settings">
+    <div class="inner">
+      <div class="brand">
+        <a class="homeLink" href="https://cavimat99.github.io/Home-MC/" rel="noopener">← Torna a HOME</a>
+        <h1 class="h1">BIP39 <span class="accent">Word Picker</span></h1>
+        <div class="sub">Estrai parole casuali dall’elenco ufficiale (inglese) di 2048 parole.</div>
+      </div>
+
+      <div class="heading">Quante parole vuoi?</div>
+      <div class="row">
+        <div class="chips" id="chipsCount">
+          <button class="chip" data-n="1">1</button>
+          <button class="chip" data-n="4">4</button>
+          <button class="chip" data-n="8">8</button>
+          <button class="chip" data-n="12">12</button>
+          <button class="chip" data-n="15">15</button>
+          <button class="chip" data-n="18">18</button>
+          <button class="chip" data-n="21">21</button>
+          <button class="chip selected" data-n="24">24</button>
+        </div>
+      </div>
+
+      <div class="row rowGrid">
+        <div>
+          <div class="label">Numero personalizzato</div>
+          <div class="input">
+            <input id="countInput" type="number" min="1" max="2048" step="1" value="24" />
+            <span class="help">1–2048 (senza ripetizioni)</span>
+          </div>
+        </div>
+        <div>
+          <div class="label">Opzioni</div>
+          <div class="chips">
+            <button class="chip selected" id="noDup">No duplicati</button>
+            <button class="chip selected" id="shuffle">Ordine casuale</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="note">
+        ⚠️ <b>Avviso</b>: anche usando il generatore crittografico del browser, non usare questa pagina per generare frasi seed reali. Per portafogli crypto usa un <b>hardware wallet</b> e la procedura ufficiale.
+      </div>
+
+      <div id="err" class="err" style="display:none;"></div>
+    </div>
+  </section>
+
+  <!-- ACTIONS -->
+  <div class="bar">
+    <button class="btn" id="genBtn">GENERA</button>
+  </div>
+
+  <!-- RESULTS -->
+  <section id="results" class="results">
+    <div class="wrap">
+      <div class="top">
+        <h2 class="title">Risultato</h2>
+        <div class="badge" id="sourceBadge">Wordlist: caricamento…</div>
+      </div>
+      <div class="body">
+        <div id="grid" class="grid"></div>
+      </div>
+      <div class="bottom">
+        <button class="btn ghost" id="copyBtn">Copia</button>
+        <button class="btn" id="againBtn">Nuova estrazione</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(()=> {
+  const $ = id => document.getElementById(id);
+  const qsa = (s, r=document) => Array.from(r.querySelectorAll(s));
+
+  let WORDS = [];
+  let lastPick = [];
+
+  /* ======== RNG: usa crypto.getRandomValues se disponibile ======== */
+  function randInt(range){
+    if (range <= 1) return 0;
+    const g = window.crypto && window.crypto.getRandomValues ? window.crypto : null;
+    if (!g) return Math.floor(Math.random()*range);
+    const max = 0x100000000; // 2^32
+    const limit = Math.floor(max / range) * range;
+    const buf = new Uint32Array(1);
+    let v;
+    do { g.getRandomValues(buf); v = buf[0]; } while (v >= limit);
+    return v % range;
+  }
+
+  // Estrazione senza ripetizioni (Fisher–Yates parziale)
+  function sampleUnique(arr, k){
+    k = Math.min(k, arr.length);
+    const n = arr.length;
+    const idx = Array.from({length:n}, (_,i)=>i);
+    for(let i=0;i<k;i++){
+      const j = i + randInt(n - i);
+      const tmp = idx[i]; idx[i] = idx[j]; idx[j] = tmp;
+    }
+    const out = new Array(k);
+    for(let i=0;i<k;i++) out[i] = arr[idx[i]];
+    return out;
+  }
+
+  function shuffleInPlace(arr){
+    for(let i=arr.length-1;i>0;i--){
+      const j = randInt(i+1);
+      const t = arr[i]; arr[i]=arr[j]; arr[j]=t;
+    }
+    return arr;
+  }
+
+  /* ======== Fetch wordlist (sorgenti ufficiali) ======== */
+  async function fetchWordlist(){
+    const sources = [
+      {
+        url: 'https://raw.githubusercontent.com/bitcoin/bips/master/bip-0039/english.txt',
+        label: 'bitcoin/bips · english.txt'
+      },
+      {
+        url: 'https://raw.githubusercontent.com/trezor/python-mnemonic/master/src/mnemonic/wordlist/english.txt',
+        label: 'trezor/python-mnemonic'
+      }
+    ];
+    for (const s of sources){
+      try{
+        const res = await fetch(s.url, {cache:'no-store'});
+        if(!res.ok) continue;
+        const text = (await res.text()).trim();
+        const words = text.split(/\s+/);
+        if(words.length >= 2048){
+          WORDS = words;
+          $('sourceBadge').textContent = 'Wordlist: ' + s.label;
+          return true;
+        }
+      }catch(e){}
+    }
+    // Fallback: piccolo set (per non bloccare la UI)
+    WORDS = ["abandon","ability","able","about","above","absent","absorb","abstract","absurd","abuse"];
+    $('sourceBadge').textContent = 'Wordlist: fallback minimo (controlla rete)';
+    return false;
+  }
+
+  /* ======== UI helpers ======== */
+  function showResults(on){
+    $('results').classList.toggle('on', !!on);
+    $('settings').style.display = on ? 'none' : 'block';
+  }
+
+  function renderWords(list){
+    const grid = $('grid'); grid.innerHTML = '';
+    list.forEach((w,i)=>{
+      const card = document.createElement('div');
+      card.className = 'word';
+      card.innerHTML = `<small>${i+1}</small>${w}`;
+      grid.appendChild(card);
+    });
+  }
+
+  function setErr(msg){ const e=$('err'); if(msg){ e.style.display='block'; e.textContent=msg; } else { e.style.display='none'; } }
+
+  function getCount(){
+    const chipSel = qsa('#chipsCount .chip.selected')[0];
+    const chipVal = chipSel ? parseInt(chipSel.dataset.n,10) : null;
+    const inputVal = parseInt($('countInput').value, 10);
+    const n = (!isNaN(inputVal) ? inputVal : chipVal) || chipVal || 24;
+    return Math.max(1, Math.min(2048, n));
+  }
+
+  /* ======== Events ======== */
+  function bindChips(){
+    qsa('#chipsCount .chip').forEach(ch=>{
+      ch.addEventListener('click', ()=>{
+        qsa('#chipsCount .chip').forEach(b=>b.classList.remove('selected'));
+        ch.classList.add('selected');
+        $('countInput').value = ch.dataset.n;
+      }, {passive:true});
+    });
+    $('noDup').addEventListener('click', ()=>$('noDup').classList.toggle('selected'), {passive:true});
+    $('shuffle').addEventListener('click', ()=>$('shuffle').classList.toggle('selected'), {passive:true});
+  }
+
+  async function generate(){
+    setErr('');
+    if(WORDS.length===0){ await fetchWordlist(); }
+    const n = getCount();
+    const noDup = $('noDup').classList.contains('selected');
+    if(noDup && n > WORDS.length){
+      setErr('Richieste più parole di quante ne esistano nella lista.');
+      return;
+    }
+    let pick = noDup ? sampleUnique(WORDS, n)
+                     : Array.from({length:n},()=>WORDS[randInt(WORDS.length)]);
+    if($('shuffle').classList.contains('selected')) shuffleInPlace(pick);
+    lastPick = pick.slice();
+    renderWords(pick);
+    showResults(true);
+  }
+
+  function copyOut(){
+    if(!lastPick.length) return;
+    const text = lastPick.join(' ');
+    navigator.clipboard && navigator.clipboard.writeText(text).catch(()=>{});
+  }
+
+  function again(){ showResults(false); }
+
+  /* ======== Init ======== */
+  function init(){
+    bindChips();
+    // prefetch (non blocca UI)
+    fetchWordlist().catch(()=>{});
+    $('genBtn').addEventListener('click', generate, {passive:true});
+    $('againBtn').addEventListener('click', again, {passive:true});
+    $('copyBtn').addEventListener('click', copyOut, {passive:true});
+  }
+  window.addEventListener('load', init);
+})();
+</script>
+</body>
+</html>
